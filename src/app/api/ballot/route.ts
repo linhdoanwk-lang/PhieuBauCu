@@ -22,7 +22,10 @@ export async function GET() {
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Unable to load ballot configuration", error);
-    return NextResponse.json({ message: "Hệ thống dữ liệu chưa sẵn sàng." }, { status: 503 });
+    return NextResponse.json({
+      message: "Hệ thống dữ liệu chưa sẵn sàng.",
+      code: process.env.DATABASE_URL ? "DATABASE_ERROR" : "DATABASE_URL_MISSING",
+    }, { status: 503 });
   }
 }
 
