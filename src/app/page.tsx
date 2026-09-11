@@ -1,9 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { Check, CheckCircle, LockKey, MagnifyingGlass, Plus, Trash, UsersThree, X } from "@phosphor-icons/react";
-import { directorySuggestions, normalizeName, PRESET_CANDIDATES_KEY, presetCandidates, readJson, STORAGE_KEY, SUGGESTION_CANDIDATES_KEY, type CandidateRecord, type Submission } from "@/lib/ballot";
+import { Check, MagnifyingGlass, Plus, Trash, UsersThree, X } from "@phosphor-icons/react";
+import { directorySuggestions, normalizeName, presetCandidates, type CandidateRecord } from "@/lib/ballot";
 import "./form.css";
 
 export default function Home() {
@@ -14,17 +13,27 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [reviewing, setReviewing] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [availableCandidates, setAvailableCandidates] = useState(presetCandidates);
   const [suggestionPool, setSuggestionPool] = useState(directorySuggestions);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setSubmissions(readJson<Submission[]>(STORAGE_KEY, []));
-    const importedPreset = readJson<CandidateRecord[]>(PRESET_CANDIDATES_KEY, []);
-    const importedSuggestions = readJson<CandidateRecord[]>(SUGGESTION_CANDIDATES_KEY, []);
-    if (importedPreset.length) setAvailableCandidates(importedPreset.map((item) => item.fullName.toUpperCase()));
-    if (importedSuggestions.length) setSuggestionPool(importedSuggestions.map((item) => item.fullName.toUpperCase()));
+    let active = true;
+    const loadCandidates = async () => {
+      try {
+        const response = await fetch("/api/ballot", { cache: "no-store" });
+        const data = await response.json() as { presetCandidates?: CandidateRecord[]; suggestionCandidates?: CandidateRecord[]; message?: string };
+        if (!response.ok) throw new Error(data.message || "Không thể tải danh sách ứng viên.");
+        if (!active) return;
+        if (data.presetCandidates?.length) setAvailableCandidates(data.presetCandidates.map((item) => item.fullName.toUpperCase()));
+        if (data.suggestionCandidates?.length) setSuggestionPool(data.suggestionCandidates.map((item) => item.fullName.toUpperCase()));
+      } catch (error) {
+        if (active) setMessage(error instanceof Error ? error.message : "Không thể tải dữ liệu từ hệ thống.");
+      }
+    };
+    void loadCandidates();
+    return () => { active = false; };
   }, []);
   useEffect(() => { if (isAdding) inputRef.current?.focus(); }, [isAdding]);
 
@@ -62,13 +71,25 @@ export default function Home() {
     setReviewing(true);
   };
 
-  const confirmSubmission = () => {
-    const submissionId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const next = [...submissions, { id: submissionId, submittedAt: new Date().toISOString(), candidates: selected }];
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setSubmissions(next);
-    setReviewing(false);
-    setSubmitted(true);
+  const confirmSubmission = async () => {
+    setSubmitting(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/ballot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidates: selected }),
+      });
+      const data = await response.json() as { message?: string };
+      if (!response.ok) throw new Error(data.message || "Không thể lưu phiếu.");
+      setReviewing(false);
+      setSubmitted(true);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Không thể lưu phiếu. Vui lòng thử lại.");
+      setReviewing(false);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const startAnother = () => {
@@ -89,7 +110,7 @@ export default function Home() {
           <section className="successCard" aria-live="polite">
             <span className="successIcon"><Check size={34} weight="bold" /></span>
             <h2>Đã ghi nhận phiếu bầu</h2>
-            <p>Bạn đã chọn {selected.length} ứng viên. Phiếu đang được lưu trên trình duyệt này.</p>
+            <p>Bạn đã chọn {selected.length} ứng viên. Phiếu đã được lưu vào hệ thống thống kê chung.</p>
             <div className="successActions"><button className="primaryButton" onClick={startAnother} type="button">Tạo phiếu mới</button></div>
           </section>
         ) : (
@@ -157,9 +178,9 @@ export default function Home() {
           <section aria-labelledby="review-title" aria-modal="true" className="modal" onMouseDown={(event) => event.stopPropagation()} role="dialog">
             <button className="modalClose" aria-label="Đóng" onClick={() => setReviewing(false)} type="button"><X size={22} /></button>
             <h2 id="review-title">Kiểm tra trước khi gửi</h2>
-            <p>Bạn đã chọn {selected.length} ứng viên. Sau khi xác nhận, phiếu sẽ được thêm vào thống kê trên máy này.</p>
+            <p>Bạn đã chọn {selected.length} ứng viên. Sau khi xác nhận, phiếu sẽ được thêm vào thống kê chung.</p>
             <div className="reviewList">{selected.map((candidate, index) => <div key={candidate}><span>{index + 1}</span>{candidate}</div>)}</div>
-            <div className="modalActions"><button className="secondaryButton" onClick={() => setReviewing(false)} type="button">Quay lại chỉnh sửa</button><button className="primaryButton" onClick={confirmSubmission} type="button">Xác nhận gửi phiếu</button></div>
+            <div className="modalActions"><button className="secondaryButton" disabled={submitting} onClick={() => setReviewing(false)} type="button">Quay lại chỉnh sửa</button><button className="primaryButton" disabled={submitting} onClick={confirmSubmission} type="button">{submitting ? "Đang gửi..." : "Xác nhận gửi phiếu"}</button></div>
           </section>
         </div>
       )}

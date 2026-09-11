@@ -3,7 +3,7 @@
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowCounterClockwise, CaretDown, CaretUp, ChartBar, CheckCircle, Crown, DownloadSimple, FileXls, MagnifyingGlass, SignOut, Trash, UploadSimple, UsersThree, WarningCircle } from "@phosphor-icons/react";
-import { HIDDEN_KEY, normalizeName, PRESET_CANDIDATES_KEY, presetCandidates, readJson, STORAGE_KEY, SUGGESTION_CANDIDATES_KEY, directorySuggestions, type CandidateRecord, type Submission } from "@/lib/ballot";
+import { normalizeName, presetCandidates, directorySuggestions, type CandidateRecord, type Submission } from "@/lib/ballot";
 import { exportStatistics, readCandidateWorkbook } from "@/lib/excel-client";
 import "./admin.css";
 
@@ -57,18 +57,35 @@ export default function AdminDashboard() {
   const [working, setWorking] = useState(false);
 
   useEffect(() => {
-    setSubmissions(readJson<Submission[]>(STORAGE_KEY, []));
-    setHiddenCandidates(readJson<string[]>(HIDDEN_KEY, []));
-    const importedPreset = readJson<CandidateRecord[]>(PRESET_CANDIDATES_KEY, []);
-    const importedSuggestions = readJson<CandidateRecord[]>(SUGGESTION_CANDIDATES_KEY, []);
-    if (importedPreset.length) {
-      setPresetCount(importedPreset.length);
-      setPresetNames(importedPreset.map((candidate) => candidate.fullName));
-    }
-    if (importedSuggestions.length) {
-      setSuggestionCount(importedSuggestions.length);
-      setSuggestionNames(importedSuggestions.map((candidate) => candidate.fullName));
-    }
+    let active = true;
+    const loadData = async () => {
+      try {
+        const response = await fetch("/api/admin/data", { cache: "no-store" });
+        const data = await response.json() as {
+          submissions?: Submission[];
+          hiddenCandidates?: string[];
+          presetCandidates?: CandidateRecord[];
+          suggestionCandidates?: CandidateRecord[];
+          message?: string;
+        };
+        if (!response.ok) throw new Error(data.message || "Không thể tải dữ liệu thống kê.");
+        if (!active) return;
+        const nextPreset = data.presetCandidates ?? [];
+        const nextSuggestions = data.suggestionCandidates ?? [];
+        setSubmissions(data.submissions ?? []);
+        setHiddenCandidates(data.hiddenCandidates ?? []);
+        setPresetCount(nextPreset.length);
+        setSuggestionCount(nextSuggestions.length);
+        setPresetNames(nextPreset.map((candidate) => candidate.fullName));
+        setSuggestionNames(nextSuggestions.map((candidate) => candidate.fullName));
+      } catch (error) {
+        if (!active) return;
+        setImportError(true);
+        setImportMessage(error instanceof Error ? error.message : "Không thể tải dữ liệu thống kê.");
+      }
+    };
+    void loadData();
+    return () => { active = false; };
   }, []);
 
   const allResults = useMemo(() => {
@@ -124,21 +141,52 @@ export default function AdminDashboard() {
     });
   }, [classifiedResults, nameQuery, resultFilter]);
 
-  const hideFromRanking = (name: string) => {
-    const next = [...new Set([...hiddenCandidates, name])];
-    window.localStorage.setItem(HIDDEN_KEY, JSON.stringify(next));
-    setHiddenCandidates(next);
+  const hideFromRanking = async (name: string) => {
+    try {
+      const response = await fetch("/api/admin/hidden-candidates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!response.ok) throw new Error();
+      setHiddenCandidates((current) => [...new Set([...current, name])]);
+    } catch {
+      setImportError(true);
+      setImportMessage("Không thể xóa ứng viên khỏi bảng xếp hạng.");
+    }
   };
-  const restoreRanking = () => {
-    window.localStorage.setItem(HIDDEN_KEY, "[]");
-    setHiddenCandidates([]);
-    setShowHiddenCandidates(false);
+  const restoreRanking = async () => {
+    try {
+      const response = await fetch("/api/admin/hidden-candidates", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok) throw new Error();
+      setHiddenCandidates([]);
+      setShowHiddenCandidates(false);
+    } catch {
+      setImportError(true);
+      setImportMessage("Không thể khôi phục danh sách ứng viên.");
+    }
   };
-  const restoreCandidate = (name: string) => {
-    const next = hiddenCandidates.filter((candidate) => candidate !== name);
-    window.localStorage.setItem(HIDDEN_KEY, JSON.stringify(next));
-    setHiddenCandidates(next);
-    if (next.length === 0) setShowHiddenCandidates(false);
+  const restoreCandidate = async (name: string) => {
+    try {
+      const response = await fetch("/api/admin/hidden-candidates", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!response.ok) throw new Error();
+      setHiddenCandidates((current) => {
+        const next = current.filter((candidate) => candidate !== name);
+        if (next.length === 0) setShowHiddenCandidates(false);
+        return next;
+      });
+    } catch {
+      setImportError(true);
+      setImportMessage("Không thể khôi phục ứng viên.");
+    }
   };
 
   const importCandidates = async (event: ChangeEvent<HTMLInputElement>, type: "preset" | "suggestion") => {
@@ -150,8 +198,13 @@ export default function AdminDashboard() {
     setImportError(false);
     try {
       const records = await readCandidateWorkbook(file);
-      const key = type === "preset" ? PRESET_CANDIDATES_KEY : SUGGESTION_CANDIDATES_KEY;
-      window.localStorage.setItem(key, JSON.stringify(records));
+      const response = await fetch("/api/admin/candidates", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, records }),
+      });
+      const data = await response.json() as { message?: string };
+      if (!response.ok) throw new Error(data.message || "Không thể lưu danh sách ứng viên.");
       const names = records.map((candidate) => candidate.fullName);
       if (type === "preset") {
         setPresetCount(records.length);
@@ -174,11 +227,7 @@ export default function AdminDashboard() {
     setImportMessage("");
     setImportError(false);
     try {
-      const importedPreset = readJson<CandidateRecord[]>(PRESET_CANDIDATES_KEY, []);
-      const importedSuggestions = readJson<CandidateRecord[]>(SUGGESTION_CANDIDATES_KEY, []);
-      const officialNames = importedPreset.length ? importedPreset.map((candidate) => candidate.fullName) : presetCandidates;
-      const suggestedNames = importedSuggestions.length ? importedSuggestions.map((candidate) => candidate.fullName) : directorySuggestions;
-      const knownNames = new Set([...officialNames, ...suggestedNames].map(normalizeName));
+      const knownNames = new Set([...presetNames, ...suggestionNames].map(normalizeName));
       const namesToReview = allResults.filter((result) => !knownNames.has(normalizeName(result.name)));
       await exportStatistics(rankedResults, submissions.length, namesToReview);
       setImportMessage("Đã tạo file Excel gồm thống kê, biểu đồ và danh sách tên cần kiểm tra.");

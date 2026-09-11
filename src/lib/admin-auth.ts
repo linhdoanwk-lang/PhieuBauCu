@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { cookies } from "next/headers";
 
 export const ADMIN_COOKIE = "ballot_admin_session";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -35,4 +36,9 @@ export function verifyAdminSession(value?: string) {
   if (!payload || !suppliedSignature || Number(payload) <= Date.now()) return false;
   const expectedSignature = createHmac("sha256", sessionSecret()).update(payload).digest("base64url");
   return safeEqual(suppliedSignature, expectedSignature);
+}
+
+export async function adminIsAuthenticated() {
+  const cookieStore = await cookies();
+  return verifyAdminSession(cookieStore.get(ADMIN_COOKIE)?.value);
 }
