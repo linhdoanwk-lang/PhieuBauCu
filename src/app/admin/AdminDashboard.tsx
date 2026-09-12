@@ -126,7 +126,6 @@ export default function AdminDashboard() {
       .sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name, "vi"));
   }, [allResults, hiddenCandidates, presetNames]);
   const maxChartVotes = chartResults[0]?.votes || 1;
-  const chartStepCount = Math.min(maxChartVotes, 5);
   const hiddenResults = hiddenCandidates.map((name) => ({
     name,
     votes: allResults.find((result) => result.name === name)?.votes ?? 0,
@@ -337,9 +336,6 @@ export default function AdminDashboard() {
                         <span title={result.name}>{result.name}</span>
                       </div>
                       <div className="horizontalChartPlot">
-                        <div className="horizontalChartGrid" aria-hidden="true" style={{ gridTemplateColumns: `repeat(${chartStepCount}, 1fr)` }}>
-                          {Array.from({ length: chartStepCount }, (_, gridIndex) => <span key={gridIndex} />)}
-                        </div>
                         <div className="horizontalBarArea">
                           {result.votes > 0 && <span className="horizontalChartBar" style={{ width: `${barWidth}%` }} />}
                           <strong className="horizontalChartValue" style={{ left: `${barWidth}%` }}>{result.votes}</strong>

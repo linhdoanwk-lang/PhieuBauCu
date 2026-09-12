@@ -1,7 +1,7 @@
 # Design QA — Biểu đồ phiếu bầu dạng thanh ngang
 
-- Source visual truth: `C:\Users\PA\AppData\Local\Temp\codex-clipboard-60fd9808-f2e2-4337-b8b2-e83ee8d998e9.png`
-- Source pixels: 792 × 442
+- Source visual truth: `C:\Users\PA\AppData\Local\Temp\codex-clipboard-84cf4b89-f0ed-4c1a-afaf-7d914ad9705a.png`
+- Source pixels: 1213 × 542
 - Implementation: `http://127.0.0.1:3000/admin`
 - Implementation screenshot: Codex in-app Browser capture attached to this task; the browser tool did not expose a filesystem path
 - Viewport: 1200 × 900 CSS px
@@ -11,7 +11,7 @@
 
 ## Full-view comparison evidence
 
-Both the supplied source and the rendered Admin chart were opened and inspected. The implementation matches the defining structure: numbered ranking on the left, bold uppercase candidate names, one-color horizontal bars, red values immediately after bar endpoints, vertical grid lines, numeric axis, and zero-vote rows below the voted candidates. The surrounding header and live-refresh controls intentionally retain the existing Admin design system.
+Both the supplied source and the rendered Admin chart were opened and inspected. The requested target removes the vertical guide lines while preserving numbered ranking on the left, uppercase candidate names, one-color horizontal bars, red values immediately after bar endpoints, and zero-vote rows below the voted candidates. The surrounding header and live-refresh controls intentionally retain the existing Admin design system.
 
 ## Focused region comparison evidence
 
@@ -25,9 +25,9 @@ No remaining P0, P1, or P2 visual differences.
 
 - Fonts and typography: bold uppercase names, compact rank numbers, and red vote totals reproduce the source hierarchy while using the established Admin font stack.
 - Spacing and layout rhythm: rows use a compact 30 px rhythm; the label/plot split aligns closely with the source and remains horizontally scrollable on narrow screens.
-- Colors and visual tokens: all bars use the same deep violet; vote values use dark red; light vertical grid lines remain visible without overpowering the data.
+- Colors and visual tokens: all bars use the same deep violet and vote values use dark red; vertical grid lines were removed as requested.
 - Image quality and asset fidelity: the source chart contains no raster imagery or non-standard assets to reproduce.
-- Copy and content: rank, full candidate name, vote number, zero-vote candidates, axis values, and realtime status are all present.
+- Copy and content: rank, full candidate name, vote number, zero-vote candidates, and realtime status are all present.
 
 ## Primary interactions and console
 
@@ -42,7 +42,7 @@ No remaining P0, P1, or P2 visual differences.
 - Initial pass: blocked by the local Admin authentication screen.
 - Second pass: authentication restored; found P2 density drift (rows too tall) and color drift (first bar blue while the reference uses one bar color).
 - Fixes: reduced row height from 35 px to 30 px, reduced bar thickness, removed the special first-place color, and kept values outside maximum-length bars.
-- Final pass: populated chart capture confirmed correct ranking, proportions, label alignment, grid alignment, and endpoint values.
+- Final pass: populated chart capture confirmed correct ranking, proportions, label alignment, and endpoint values; the later scoped update removed the vertical grid markup and styles entirely.
 
 ## Follow-up polish
 

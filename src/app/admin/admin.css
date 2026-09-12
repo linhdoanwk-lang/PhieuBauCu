@@ -522,23 +522,6 @@
     position: relative;
 }
 
-.horizontalChartGrid {
-    bottom: 0;
-    display: grid;
-    left: 0;
-    position: absolute;
-    right: 34px;
-    top: 0;
-}
-
-.horizontalChartGrid span {
-    border-left: 1px solid #e1e6ee;
-}
-
-.horizontalChartGrid span:last-child {
-    border-right: 1px solid #e1e6ee;
-}
-
 .horizontalBarArea {
     height: 22px;
     position: absolute;
