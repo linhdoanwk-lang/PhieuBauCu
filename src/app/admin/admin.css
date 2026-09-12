@@ -1051,7 +1051,43 @@
     }
 
     .horizontalChart {
-        min-width: 620px;
+        min-width: 0;
+        padding-inline: 0;
+        width: 100%;
+    }
+
+    .horizontalChartScroll {
+        overflow-x: hidden;
+        padding-inline: 0;
+    }
+
+    .horizontalChartRow {
+        grid-template-columns: minmax(105px, 42%) minmax(0, 1fr);
+    }
+
+    .horizontalChartLabel {
+        gap: 3px;
+        grid-template-columns: 22px minmax(0, 1fr);
+        padding-right: 7px;
+    }
+
+    .horizontalChartLabel strong,
+    .horizontalChartLabel span,
+    .horizontalChartValue {
+        font-size: .7rem;
+    }
+
+    .horizontalChartPlot {
+        min-width: 0;
+        padding-right: 24px;
+    }
+
+    .horizontalBarArea {
+        right: 24px;
+    }
+
+    .horizontalChartValue {
+        margin-left: 5px;
     }
 
     .panelHeader {
