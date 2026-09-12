@@ -1,56 +1,51 @@
-# Design QA
+# Design QA — Biểu đồ phiếu bầu dạng thanh ngang
 
-- Source visual truth: `C:\Users\PA\AppData\Local\Temp\codex-clipboard-132c172a-ee81-4815-aed8-4e5befe92836.png`
-- Implementation: Codex in-app browser at `http://127.0.0.1:3000/`
-- Implementation screenshot: inline Codex in-app browser capture (the browser API did not expose a persistent local screenshot path)
-- Source pixels: 744 × 746
-- Implementation pixels: 394 × 879 JPEG
-- CSS viewport: approximately 394 × 879 at device scale 1
-- Density normalization: source and implementation were reviewed at their native densities; layout was compared by responsive structure rather than pixel overlay because the supplied source and available browser viewport have different aspect ratios.
-- State: empty ballot, no candidates selected, add-candidate panel closed
+- Source visual truth: `C:\Users\PA\AppData\Local\Temp\codex-clipboard-60fd9808-f2e2-4337-b8b2-e83ee8d998e9.png`
+- Source pixels: 792 × 442
+- Implementation: `http://127.0.0.1:3000/admin`
+- Implementation screenshot: Codex in-app Browser capture attached to this task; the browser tool did not expose a filesystem path
+- Viewport: 1200 × 900 CSS px
+- Implementation capture pixels: 1200 × 900; device scale factor 1
+- Density normalization: visual proportions compared at fitted width because the source is a cropped chart and the implementation is an Admin page region
+- State: 15 candidates, sample QA votes 5/4/4/4/3/1/0…; sample data was removed after capture
 
 ## Full-view comparison evidence
 
-The source image and final implementation were emitted together in one browser comparison call. Both show instructions first, followed by a vertically divided checkbox list with bold uppercase candidate names. The implementation preserves that information hierarchy and interaction model, while applying the requested responsive card layout, 15-person list, persistent selection count, and explicit add-candidate action.
+Both the supplied source and the rendered Admin chart were opened and inspected. The implementation matches the defining structure: numbered ranking on the left, bold uppercase candidate names, one-color horizontal bars, red values immediately after bar endpoints, vertical grid lines, numeric axis, and zero-vote rows below the voted candidates. The surrounding header and live-refresh controls intentionally retain the existing Admin design system.
 
 ## Focused region comparison evidence
 
-The instruction block and candidate-list region were readable in the full comparison. A separate interaction check opened the add-candidate panel, searched without accents, selected a suggested name, verified automatic selection, and verified the added name was removed from subsequent suggestions. The review dialog, confirmation success state, results tab, and rank promotion after hiding the first result were also tested.
-
-## Required fidelity surfaces
-
-- Fonts and typography: Arial/Helvetica closely follows the source's plain sans-serif presentation. Candidate labels use bold uppercase text, and Vietnamese diacritics render correctly. Mobile headings and body copy wrap without overlap.
-- Spacing and layout rhythm: list rows retain the source's generous vertical rhythm and separators. The card padding, instruction spacing, and sticky mobile submission bar remain usable at the tested narrow viewport.
-- Colors and visual tokens: the source's white/gray form is retained and extended with a restrained blue selection/action system. Contrast remains clear for body copy, labels, controls, disabled state, and errors.
-- Image quality and asset fidelity: the source contains no photographic or illustrative assets. UI icons use the Phosphor icon library; no placeholder imagery or handcrafted SVG assets are present.
-- Copy and content: all visible copy is in Vietnamese and directly supports selecting, adding, reviewing, submitting, and understanding local-only statistics.
+The populated chart region was inspected at 1200 × 900. Bar lengths correctly map 5, 4, 4, 4, 3, and 1 votes to the shared scale; equal values produce equal lengths; the maximum value remains readable outside the bar; zero values align at the baseline. Labels and ranks stay aligned in separate columns without wrapping.
 
 ## Findings
 
-- No actionable P0, P1, or P2 issues remain.
-- The circular Next.js development control visible at the lower-left in local preview is development-only chrome and is not part of the production build.
+No remaining P0, P1, or P2 visual differences.
+
+## Required fidelity surfaces
+
+- Fonts and typography: bold uppercase names, compact rank numbers, and red vote totals reproduce the source hierarchy while using the established Admin font stack.
+- Spacing and layout rhythm: rows use a compact 30 px rhythm; the label/plot split aligns closely with the source and remains horizontally scrollable on narrow screens.
+- Colors and visual tokens: all bars use the same deep violet; vote values use dark red; light vertical grid lines remain visible without overpowering the data.
+- Image quality and asset fidelity: the source chart contains no raster imagery or non-standard assets to reproduce.
+- Copy and content: rank, full candidate name, vote number, zero-vote candidates, axis values, and realtime status are all present.
+
+## Primary interactions and console
+
+- Automatic five-second refresh remains active.
+- Manual refresh button is present and enabled outside a request.
+- Horizontal overflow is scoped to the chart on narrow layouts.
+- Browser console error check: no errors.
+- Local data API reports a handled configuration message because `DATABASE_URL` is not present locally; this does not affect the Vercel environment and is separate from chart rendering.
 
 ## Comparison history
 
-1. Initial interaction pass found a P2 issue: an added suggestion could still appear when the search field became empty. The suggestion filter was updated to exclude every name already present, including in the empty-query state.
-2. Post-fix evidence confirmed that after adding `NGUYỄN HOÀNG BẢO`, the name disappeared from suggestions while the remaining suggestions stayed selectable.
-3. Final empty-state comparison showed no remaining P0/P1/P2 issues.
-
-## Implementation checklist
-
-- [x] Responsive ballot form
-- [x] Fifteen preset candidates
-- [x] Multi-select checkboxes
-- [x] Add multiple external candidates
-- [x] Accent-insensitive suggestions
-- [x] Duplicate-name prevention
-- [x] Review-before-submit flow
-- [x] Browser-local submissions and statistics
-- [x] Automatic rank promotion after hiding a result
-- [x] Successful production build
+- Initial pass: blocked by the local Admin authentication screen.
+- Second pass: authentication restored; found P2 density drift (rows too tall) and color drift (first bar blue while the reference uses one bar color).
+- Fixes: reduced row height from 35 px to 30 px, reduced bar thickness, removed the special first-place color, and kept values outside maximum-length bars.
+- Final pass: populated chart capture confirmed correct ranking, proportions, label alignment, grid alignment, and endpoint values.
 
 ## Follow-up polish
 
-- P3: replace the placeholder candidate names and term label with the organization's final data before real use.
+- P3: local visual testing would be more convenient after pulling `DATABASE_URL` from Vercel into an ignored local environment file.
 
 final result: passed

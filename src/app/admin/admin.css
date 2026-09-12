@@ -466,79 +466,125 @@
     opacity: .55;
 }
 
-.chartScroll {
+.horizontalChartScroll {
     margin-top: 24px;
     overflow-x: auto;
-    padding: 8px 2px 5px;
+    padding: 4px 2px 8px;
     scrollbar-color: #c3cddd #eef2f7;
     scrollbar-width: thin;
 }
 
-.chartScroll:focus-visible {
+.horizontalChartScroll:focus-visible {
     border-radius: 8px;
     outline: 3px solid rgba(35, 99, 221, .16);
 }
 
-.barChart {
-    align-items: end;
-    border-bottom: 1px solid #dce3ed;
-    display: flex;
-    gap: 16px;
-    height: 310px;
-    padding: 16px 12px 0;
+.horizontalChart {
+    min-width: 680px;
+    padding: 4px 8px 0;
 }
 
-.chartColumn {
+.horizontalChartRow {
     align-items: center;
     display: grid;
-    flex: 1 0 72px;
-    grid-template-rows: 22px 220px 48px;
-    justify-items: center;
-    max-width: 100px;
-    min-width: 72px;
+    grid-template-columns: minmax(190px, 30%) 1fr;
+    min-height: 30px;
 }
 
-.chartValue {
-    color: #344158;
-    font-size: .82rem;
+.horizontalChartLabel {
+    align-items: center;
+    display: grid;
+    gap: 6px;
+    grid-template-columns: 34px 1fr;
+    min-width: 0;
+    padding-right: 12px;
+    text-align: right;
 }
 
-.chartTrack {
-    align-items: flex-end;
-    display: flex;
-    height: 100%;
-    justify-content: center;
-    width: 100%;
+.horizontalChartLabel strong {
+    color: #172135;
+    font-size: .86rem;
 }
 
-.chartFill {
-    background: linear-gradient(180deg, #4d82eb 0%, #2363dd 100%);
-    border-radius: 8px 8px 2px 2px;
-    box-shadow: 0 5px 12px rgba(35, 99, 221, .16);
+.horizontalChartLabel span {
+    color: #172135;
     display: block;
-    max-width: 46px;
-    min-height: 6px;
-    transition: height .45s ease;
-    width: 62%;
-}
-
-.chartColumn:first-child .chartFill {
-    background: linear-gradient(180deg, #f1bd43 0%, #de9220 100%);
-    box-shadow: 0 5px 12px rgba(222, 146, 32, .2);
-}
-
-.chartName {
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    color: #52617a;
-    display: -webkit-box;
-    font-size: .7rem;
-    font-weight: 700;
-    line-height: 1.35;
-    margin-top: 8px;
-    max-width: 88px;
+    font-size: .84rem;
+    font-weight: 800;
     overflow: hidden;
-    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.horizontalChartPlot {
+    height: 100%;
+    padding-right: 34px;
+    position: relative;
+}
+
+.horizontalChartGrid {
+    bottom: 0;
+    display: grid;
+    left: 0;
+    position: absolute;
+    right: 34px;
+    top: 0;
+}
+
+.horizontalChartGrid span {
+    border-left: 1px solid #e1e6ee;
+}
+
+.horizontalChartGrid span:last-child {
+    border-right: 1px solid #e1e6ee;
+}
+
+.horizontalBarArea {
+    height: 22px;
+    position: absolute;
+    right: 34px;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0;
+}
+
+.horizontalChartBar {
+    background: #20104f;
+    border-radius: 0 3px 3px 0;
+    bottom: 4px;
+    box-shadow: 0 2px 5px rgba(32, 16, 79, .16);
+    display: block;
+    left: 0;
+    min-width: 3px;
+    position: absolute;
+    top: 4px;
+    transition: width .45s ease;
+}
+
+.horizontalChartValue {
+    color: #b4232c;
+    font-size: .86rem;
+    line-height: 22px;
+    margin-left: 9px;
+    position: absolute;
+    top: 0;
+}
+
+.horizontalChartAxis {
+    display: grid;
+    grid-template-columns: minmax(190px, 30%) 1fr;
+    min-height: 24px;
+}
+
+.horizontalChartAxis>div {
+    display: flex;
+    justify-content: space-between;
+    margin-right: 34px;
+}
+
+.horizontalChartAxis small {
+    color: #7a8699;
+    font-size: .68rem;
 }
 
 .chartEmptyState {
@@ -1021,12 +1067,8 @@
         min-width: 0;
     }
 
-    .barChart {
-        height: 280px;
-    }
-
-    .chartColumn {
-        grid-template-rows: 22px 190px 48px;
+    .horizontalChart {
+        min-width: 620px;
     }
 
     .panelHeader {
@@ -1081,7 +1123,7 @@
         animation: none;
     }
 
-    .chartFill {
+    .horizontalChartBar {
         transition: none;
     }
 }

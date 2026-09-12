@@ -114,7 +114,23 @@ export default function AdminDashboard() {
   }, [submissions]);
 
   const rankedResults = allResults.filter((result) => !hiddenCandidates.includes(result.name));
-  const maxChartVotes = rankedResults[0]?.votes || 1;
+  const chartResults = useMemo(() => {
+    const resultByName = new Map(allResults.map((result) => [normalizeName(result.name), result]));
+    const names = new Map<string, string>();
+    presetNames.forEach((name) => names.set(normalizeName(name), name));
+    allResults.forEach((result) => names.set(normalizeName(result.name), result.name));
+
+    return [...names.entries()]
+      .map(([key, name]) => ({ name, votes: resultByName.get(key)?.votes ?? 0 }))
+      .filter((result) => !hiddenCandidates.includes(result.name))
+      .sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name, "vi"));
+  }, [allResults, hiddenCandidates, presetNames]);
+  const maxChartVotes = chartResults[0]?.votes || 1;
+  const chartStepCount = Math.min(maxChartVotes, 5);
+  const chartTicks = Array.from(
+    { length: chartStepCount + 1 },
+    (_, index) => Math.round((maxChartVotes * index) / chartStepCount),
+  );
   const hiddenResults = hiddenCandidates.map((name) => ({
     name,
     votes: allResults.find((result) => result.name === name)?.votes ?? 0,
@@ -311,20 +327,37 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
-          {rankedResults.length === 0 ? (
-            <div className="chartEmptyState"><ChartBar size={38} /><p>Biểu đồ sẽ xuất hiện khi có phiếu bầu đầu tiên.</p></div>
+          {chartResults.length === 0 ? (
+            <div className="chartEmptyState"><ChartBar size={38} /><p>Biểu đồ sẽ xuất hiện khi có danh sách ứng viên.</p></div>
           ) : (
-            <div className="chartScroll" tabIndex={0}>
-              <div className="barChart" style={{ minWidth: `${Math.max(680, rankedResults.length * 88)}px` }}>
-                {rankedResults.map((result) => (
-                  <div className="chartColumn" key={result.name} aria-label={`${result.name}: ${result.votes} phiếu`}>
-                    <strong className="chartValue">{result.votes}</strong>
-                    <div className="chartTrack" aria-hidden="true">
-                      <span className="chartFill" style={{ height: `${Math.max((result.votes / maxChartVotes) * 100, 4)}%` }} />
+            <div className="horizontalChartScroll" tabIndex={0}>
+              <div className="horizontalChart">
+                {chartResults.map((result, index) => {
+                  const barWidth = (result.votes / maxChartVotes) * 100;
+                  return (
+                    <div className="horizontalChartRow" key={result.name} aria-label={`Hạng ${index + 1}, ${result.name}: ${result.votes} phiếu`}>
+                      <div className="horizontalChartLabel">
+                        <strong>{index + 1}.</strong>
+                        <span title={result.name}>{result.name}</span>
+                      </div>
+                      <div className="horizontalChartPlot">
+                        <div className="horizontalChartGrid" aria-hidden="true" style={{ gridTemplateColumns: `repeat(${chartStepCount}, 1fr)` }}>
+                          {Array.from({ length: chartStepCount }, (_, gridIndex) => <span key={gridIndex} />)}
+                        </div>
+                        <div className="horizontalBarArea">
+                          {result.votes > 0 && <span className="horizontalChartBar" style={{ width: `${barWidth}%` }} />}
+                          <strong className="horizontalChartValue" style={{ left: `${barWidth}%` }}>{result.votes}</strong>
+                        </div>
+                      </div>
                     </div>
-                    <span className="chartName" title={result.name}>{result.name}</span>
+                  );
+                })}
+                <div className="horizontalChartAxis" aria-hidden="true">
+                  <span />
+                  <div>
+                    {chartTicks.map((tick, index) => <small key={`${tick}-${index}`}>{tick}</small>)}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           )}
