@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowCounterClockwise, CaretDown, CaretUp, ChartBar, CheckCircle, Crown, DownloadSimple, FileXls, MagnifyingGlass, SignOut, Trash, UploadSimple, UsersThree, WarningCircle } from "@phosphor-icons/react";
 import { normalizeName, presetCandidates, directorySuggestions, type CandidateRecord, type Submission } from "@/lib/ballot";
@@ -55,38 +55,57 @@ export default function AdminDashboard() {
   const [importMessage, setImportMessage] = useState("");
   const [importError, setImportError] = useState(false);
   const [working, setWorking] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  const refreshingRef = useRef(false);
 
-  useEffect(() => {
-    let active = true;
-    const loadData = async () => {
-      try {
-        const response = await fetch("/api/admin/data", { cache: "no-store" });
-        const data = await response.json() as {
-          submissions?: Submission[];
-          hiddenCandidates?: string[];
-          presetCandidates?: CandidateRecord[];
-          suggestionCandidates?: CandidateRecord[];
-          message?: string;
-        };
-        if (!response.ok) throw new Error(data.message || "Không thể tải dữ liệu thống kê.");
-        if (!active) return;
-        const nextPreset = data.presetCandidates ?? [];
-        const nextSuggestions = data.suggestionCandidates ?? [];
-        setSubmissions(data.submissions ?? []);
-        setHiddenCandidates(data.hiddenCandidates ?? []);
-        setPresetCount(nextPreset.length);
-        setSuggestionCount(nextSuggestions.length);
-        setPresetNames(nextPreset.map((candidate) => candidate.fullName));
-        setSuggestionNames(nextSuggestions.map((candidate) => candidate.fullName));
-      } catch (error) {
-        if (!active) return;
+  const loadDashboardData = useCallback(async (showError = false) => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    setIsRefreshing(true);
+    try {
+      const response = await fetch("/api/admin/data", { cache: "no-store" });
+      const data = await response.json() as {
+        submissions?: Submission[];
+        hiddenCandidates?: string[];
+        presetCandidates?: CandidateRecord[];
+        suggestionCandidates?: CandidateRecord[];
+        message?: string;
+      };
+      if (!response.ok) throw new Error(data.message || "Không thể tải dữ liệu thống kê.");
+      const nextPreset = data.presetCandidates ?? [];
+      const nextSuggestions = data.suggestionCandidates ?? [];
+      setSubmissions(data.submissions ?? []);
+      setHiddenCandidates(data.hiddenCandidates ?? []);
+      setPresetCount(nextPreset.length);
+      setSuggestionCount(nextSuggestions.length);
+      setPresetNames(nextPreset.map((candidate) => candidate.fullName));
+      setSuggestionNames(nextSuggestions.map((candidate) => candidate.fullName));
+      setLastUpdatedAt(new Date());
+    } catch (error) {
+      if (showError) {
         setImportError(true);
         setImportMessage(error instanceof Error ? error.message : "Không thể tải dữ liệu thống kê.");
       }
-    };
-    void loadData();
-    return () => { active = false; };
+    } finally {
+      refreshingRef.current = false;
+      setIsRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    const initialRefreshTimer = window.setTimeout(() => void loadDashboardData(true), 0);
+    const refreshTimer = window.setInterval(() => void loadDashboardData(), 5000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void loadDashboardData();
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearTimeout(initialRefreshTimer);
+      window.clearInterval(refreshTimer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [loadDashboardData]);
 
   const allResults = useMemo(() => {
     const counts = new Map<string, number>();
@@ -95,6 +114,7 @@ export default function AdminDashboard() {
   }, [submissions]);
 
   const rankedResults = allResults.filter((result) => !hiddenCandidates.includes(result.name));
+  const maxChartVotes = rankedResults[0]?.votes || 1;
   const hiddenResults = hiddenCandidates.map((name) => ({
     name,
     votes: allResults.find((result) => result.name === name)?.votes ?? 0,
@@ -273,6 +293,42 @@ export default function AdminDashboard() {
           <article><span className="metricIcon"><UsersThree size={22} weight="fill" /></span><div><small>Ứng viên có phiếu</small><strong>{allResults.length}</strong></div></article>
           <article><span className="metricIcon"><Crown size={22} weight="fill" /></span><div><small>Đang dẫn đầu</small><strong className="leaderName">{rankedResults[0]?.name || "Chưa có"}</strong></div></article>
         </div>
+        <section className="liveChartPanel" aria-labelledby="live-chart-title">
+          <div className="liveChartHeader">
+            <div>
+              <span>BIỂU ĐỒ TRỰC TIẾP</span>
+              <h2 id="live-chart-title">Số phiếu theo ứng viên</h2>
+              <p>Biểu đồ tự làm mới từ dữ liệu đã gửi, không cần tải lại trang.</p>
+            </div>
+            <div className="liveChartActions">
+              <div className="liveStatus" aria-live="polite">
+                <span className={`liveDot ${isRefreshing ? "isRefreshing" : ""}`} />
+                <span>{isRefreshing ? "Đang cập nhật..." : "Tự động cập nhật mỗi 5 giây"}</span>
+                {lastUpdatedAt && <small>Cập nhật lúc {lastUpdatedAt.toLocaleTimeString("vi-VN")}</small>}
+              </div>
+              <button className="refreshChartButton" disabled={isRefreshing} onClick={() => void loadDashboardData(true)} type="button">
+                <ArrowCounterClockwise size={18} /> Làm mới
+              </button>
+            </div>
+          </div>
+          {rankedResults.length === 0 ? (
+            <div className="chartEmptyState"><ChartBar size={38} /><p>Biểu đồ sẽ xuất hiện khi có phiếu bầu đầu tiên.</p></div>
+          ) : (
+            <div className="chartScroll" tabIndex={0}>
+              <div className="barChart" style={{ minWidth: `${Math.max(680, rankedResults.length * 88)}px` }}>
+                {rankedResults.map((result) => (
+                  <div className="chartColumn" key={result.name} aria-label={`${result.name}: ${result.votes} phiếu`}>
+                    <strong className="chartValue">{result.votes}</strong>
+                    <div className="chartTrack" aria-hidden="true">
+                      <span className="chartFill" style={{ height: `${Math.max((result.votes / maxChartVotes) * 100, 4)}%` }} />
+                    </div>
+                    <span className="chartName" title={result.name}>{result.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
         <section className="resultsPanel">
           <div className="panelHeader">
             <div><span>KẾT QUẢ TẠM THỜI</span><h2>Xếp hạng theo số phiếu</h2><p>Xóa một hàng sẽ tự động đôn những người phía dưới lên.</p></div>

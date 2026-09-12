@@ -364,6 +364,198 @@
     white-space: nowrap;
 }
 
+.liveChartPanel {
+    background: #fff;
+    border: 1px solid #e0e6ef;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(31, 48, 78, .05);
+    margin-top: 18px;
+    padding: 26px;
+}
+
+.liveChartHeader {
+    align-items: flex-start;
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+}
+
+.liveChartHeader>div:first-child>span {
+    color: #2363dd;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .12em;
+}
+
+.liveChartHeader h2 {
+    font-size: 1.3rem;
+    margin-top: 5px;
+}
+
+.liveChartHeader p {
+    color: #707c91;
+    font-size: .88rem;
+    margin-top: 5px;
+}
+
+.liveChartActions {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+}
+
+.liveStatus {
+    align-items: center;
+    color: #4f5f76;
+    display: grid;
+    font-size: .77rem;
+    grid-template-columns: auto 1fr;
+    line-height: 1.35;
+    min-width: 196px;
+}
+
+.liveStatus small {
+    color: #8993a4;
+    font-size: .69rem;
+    grid-column: 2;
+}
+
+.liveDot {
+    background: #22a46b;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(34, 164, 107, .12);
+    height: 8px;
+    margin-right: 9px;
+    width: 8px;
+}
+
+.liveDot.isRefreshing {
+    animation: livePulse .9s ease-in-out infinite alternate;
+}
+
+@keyframes livePulse {
+    to {
+        box-shadow: 0 0 0 7px rgba(34, 164, 107, .06);
+        opacity: .55;
+    }
+}
+
+.refreshChartButton {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #cfd8e7;
+    border-radius: 9px;
+    color: #3d4d66;
+    cursor: pointer;
+    display: flex;
+    font-size: .8rem;
+    font-weight: 700;
+    gap: 7px;
+    min-height: 40px;
+    padding: 8px 12px;
+    white-space: nowrap;
+}
+
+.refreshChartButton:hover {
+    background: #f6f8fb;
+    color: #1f5dcc;
+}
+
+.refreshChartButton:disabled {
+    cursor: wait;
+    opacity: .55;
+}
+
+.chartScroll {
+    margin-top: 24px;
+    overflow-x: auto;
+    padding: 8px 2px 5px;
+    scrollbar-color: #c3cddd #eef2f7;
+    scrollbar-width: thin;
+}
+
+.chartScroll:focus-visible {
+    border-radius: 8px;
+    outline: 3px solid rgba(35, 99, 221, .16);
+}
+
+.barChart {
+    align-items: end;
+    border-bottom: 1px solid #dce3ed;
+    display: flex;
+    gap: 16px;
+    height: 310px;
+    padding: 16px 12px 0;
+}
+
+.chartColumn {
+    align-items: center;
+    display: grid;
+    flex: 1 0 72px;
+    grid-template-rows: 22px 220px 48px;
+    justify-items: center;
+    max-width: 100px;
+    min-width: 72px;
+}
+
+.chartValue {
+    color: #344158;
+    font-size: .82rem;
+}
+
+.chartTrack {
+    align-items: flex-end;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    width: 100%;
+}
+
+.chartFill {
+    background: linear-gradient(180deg, #4d82eb 0%, #2363dd 100%);
+    border-radius: 8px 8px 2px 2px;
+    box-shadow: 0 5px 12px rgba(35, 99, 221, .16);
+    display: block;
+    max-width: 46px;
+    min-height: 6px;
+    transition: height .45s ease;
+    width: 62%;
+}
+
+.chartColumn:first-child .chartFill {
+    background: linear-gradient(180deg, #f1bd43 0%, #de9220 100%);
+    box-shadow: 0 5px 12px rgba(222, 146, 32, .2);
+}
+
+.chartName {
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: #52617a;
+    display: -webkit-box;
+    font-size: .7rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-top: 8px;
+    max-width: 88px;
+    overflow: hidden;
+    text-align: center;
+}
+
+.chartEmptyState {
+    align-items: center;
+    color: #7a8699;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    min-height: 230px;
+    text-align: center;
+}
+
+.chartEmptyState p {
+    font-size: .87rem;
+}
+
 .resultsPanel {
     background: #fff;
     border: 1px solid #e0e6ef;
@@ -810,6 +1002,33 @@
         padding: 19px 15px;
     }
 
+    .liveChartPanel {
+        padding: 19px 15px;
+    }
+
+    .liveChartHeader {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .liveChartActions {
+        align-items: stretch;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .liveStatus {
+        min-width: 0;
+    }
+
+    .barChart {
+        height: 280px;
+    }
+
+    .chartColumn {
+        grid-template-rows: 22px 190px 48px;
+    }
+
     .panelHeader {
         flex-direction: column;
     }
@@ -854,5 +1073,15 @@
 
     .resultName {
         align-items: flex-start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .liveDot.isRefreshing {
+        animation: none;
+    }
+
+    .chartFill {
+        transition: none;
     }
 }
