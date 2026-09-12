@@ -127,10 +127,6 @@ export default function AdminDashboard() {
   }, [allResults, hiddenCandidates, presetNames]);
   const maxChartVotes = chartResults[0]?.votes || 1;
   const chartStepCount = Math.min(maxChartVotes, 5);
-  const chartTicks = Array.from(
-    { length: chartStepCount + 1 },
-    (_, index) => Math.round((maxChartVotes * index) / chartStepCount),
-  );
   const hiddenResults = hiddenCandidates.map((name) => ({
     name,
     votes: allResults.find((result) => result.name === name)?.votes ?? 0,
@@ -352,12 +348,6 @@ export default function AdminDashboard() {
                     </div>
                   );
                 })}
-                <div className="horizontalChartAxis" aria-hidden="true">
-                  <span />
-                  <div>
-                    {chartTicks.map((tick, index) => <small key={`${tick}-${index}`}>{tick}</small>)}
-                  </div>
-                </div>
               </div>
             </div>
           )}
